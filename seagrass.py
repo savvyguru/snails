@@ -73,6 +73,7 @@ class SeagrassConfig(Config):
 class SeagrassDataset(utils.Dataset):
 
     def load_seagrass(self, dataset_dir, subset):
+        dataset_dir = os.path.abspath("../")
         """Load a subset of the Balloon dataset.
         dataset_dir: Root directory of the dataset.
         subset: Subset to load: train or val
