@@ -82,8 +82,8 @@ class SeagrassDataset(utils.Dataset):
         self.add_class("snail", 1, "snail")
 
         # Train or validation dataset?
-        #assert subset in ["train", "val"]
-        #dataset_dir = os.path.join(dataset_dir, subset)
+        assert subset in ["train", "val"]
+        dataset_dir = os.path.join(dataset_dir, subset)
 
         # Load annotations
         # VGG Image Annotator (up to version 1.6) saves each image in the form:
