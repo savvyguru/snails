@@ -86,18 +86,10 @@ class SeagrassDataset(utils.Dataset):
 
         # Load annotations
         # VGG Image Annotator (up to version 1.6) saves each image in the form:
-        # { 'filename': '28503151_5b5b7ec140_b.jpg',
-        #   'regions': {
-        #       '0': {
-        #           'region_attributes': {},
-        #           'shape_attributes': {
-        #               'all_points_x': [...],
-        #               'all_points_y': [...],
-        #               'name': 'polygon'}},
-        #       ... more regions ...
-        #   },
-        #   'size': 100202
-        # }
+        #  'IMG_3289.jpeg6296483': {'file_attributes': {},
+        #                   'filename': 'IMG_3289.jpeg',
+        #                   'regions': [],
+        #                   'size': 6296483},
         # We mostly care about the x and y coordinates of each region
         # Note: In VIA 2.0, regions was changed from a dict to a list.
         annotations = json.load(open(os.path.join(dataset_dir, "via_region_data.json")))
@@ -105,7 +97,7 @@ class SeagrassDataset(utils.Dataset):
 
         # The VIA tool saves images in the JSON even if they don't have any
         # annotations. Skip unannotated images.
-        annotations = [a for a in annotations if a.values()['regions']!=[]]
+        annotations = [a for a in annotations if a['regions']!=[]]
 
         # Add images
         for a in annotations:
@@ -113,8 +105,8 @@ class SeagrassDataset(utils.Dataset):
             # the outline of each object instance. These are stores in the
             # shape_attributes (see json format above)
             # The if condition is needed to support VIA versions 1.x and 2.x.
-            if type(a['regions']) is dict:
-                polygons = [r['shape_attributes'] for r in a['regions'].values()]
+            if type(a['regions']) is list:
+                polygons = [r['shape_attributes'] for r in a['regions']]
             else:
                 polygons = [r['shape_attributes'] for r in a['regions']] 
 
@@ -141,7 +133,7 @@ class SeagrassDataset(utils.Dataset):
         """
         # If not a balloon dataset image, delegate to parent class.
         image_info = self.image_info[image_id]
-        if image_info["source"] != "balloon":
+        if image_info["source"] != "seagrass":
             return super(self.__class__, self).load_mask(image_id)
 
         # Convert polygons to a bitmap mask of shape
@@ -161,7 +153,7 @@ class SeagrassDataset(utils.Dataset):
     def image_reference(self, image_id):
         """Return the path of the image."""
         info = self.image_info[image_id]
-        if info["source"] == "balloon":
+        if info["source"] == "seagrass":
             return info["path"]
         else:
             super(self.__class__, self).image_reference(image_id)
@@ -170,13 +162,13 @@ class SeagrassDataset(utils.Dataset):
 def train(model):
     """Train the model."""
     # Training dataset.
-    dataset_train = BalloonDataset()
-    dataset_train.load_balloon(args.dataset, "train")
+    dataset_train = SeagrassDataset()
+    dataset_train.load_seagrass(args.dataset, "train")
     dataset_train.prepare()
 
     # Validation dataset
-    dataset_val = BalloonDataset()
-    dataset_val.load_balloon(args.dataset, "val")
+    dataset_val = SeagrassDataset()
+    dataset_val.load_seagrass(args.dataset, "val")
     dataset_val.prepare()
 
     # *** This training schedule is an example. Update to your needs ***
@@ -288,9 +280,6 @@ if __name__ == '__main__':
     parser.add_argument('--image', required=False,
                         metavar="path or URL to image",
                         help='Image to apply the color splash effect on')
-    parser.add_argument('--video', required=False,
-                        metavar="path or URL to video",
-                        help='Video to apply the color splash effect on')
     args = parser.parse_args()
 
     # Validate arguments
@@ -306,9 +295,9 @@ if __name__ == '__main__':
 
     # Configurations
     if args.command == "train":
-        config = BalloonConfig()
+        config = SeagrassConfig()
     else:
-        class InferenceConfig(BalloonConfig):
+        class InferenceConfig(SeagrassConfig):
             # Set batch size to 1 since we'll be running inference on
             # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
             GPU_COUNT = 1
